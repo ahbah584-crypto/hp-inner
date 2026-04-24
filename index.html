@@ -2,166 +2,87 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>KMZ Auto-Group Pro | Premium Edition</title>
+    <title>KMZ Grouping Pro | AD PRODUCTION</title>
     <style>
         :root {
-            --primary: #bb86fc;
-            --primary-variant: #3700b3;
-            --secondary: #03dac6;
-            --background: #121212;
-            --surface: #1e1e1e;
-            --error: #cf6679;
-            --on-background: #ffffff;
+            --bg: #121212;
+            --card-bg: #1e1e1e;
+            --border: #333333;
+            --text: #e0e0e0;
+            --text-dim: #888888;
+            --accent: #ffffff;
+            --error: #ff5252;
+            --success: #00e676;
         }
 
         body {
-            font-family: 'Poppins', 'Segoe UI', sans-serif;
-            background-color: var(--background);
-            color: var(--on-background);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            min-height: 100vh;
-            margin: 0;
-            background: radial-gradient(circle at center, #1e1e2f 0%, #121212 100%);
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            display: flex; justify-content: center; align-items: center;
+            min-height: 100vh; margin: 0;
         }
 
         .card {
-            background: var(--surface);
-            padding: 40px;
-            border-radius: 24px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            width: 100%;
-            max-width: 550px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
-            backdrop-filter: blur(10px);
+            background: var(--card-bg);
+            padding: 40px; border-radius: 12px;
+            border: 1px solid var(--border);
+            width: 100%; max-width: 500px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
 
-        h2 {
-            color: var(--primary);
-            text-align: center;
-            margin-bottom: 8px;
-            font-weight: 700;
-            letter-spacing: 1px;
-            text-transform: uppercase;
-        }
-
-        p.subtitle {
-            text-align: center;
-            color: #888;
-            font-size: 14px;
-            margin-bottom: 35px;
-        }
-
-        .input-group {
-            margin-bottom: 25px;
-        }
+        h2 { color: var(--accent); text-align: center; margin-bottom: 5px; font-weight: 600; }
+        p.subtitle { text-align: center; color: var(--text-dim); font-size: 13px; margin-bottom: 35px; }
 
         .input-box {
-            position: relative;
-            background: rgba(255, 255, 255, 0.03);
-            border: 2px dashed rgba(187, 134, 252, 0.2);
-            padding: 25px;
-            border-radius: 16px;
-            text-align: center;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            background: #181818;
+            border: 1px solid var(--border); padding: 20px;
+            border-radius: 6px; text-align: center; margin-bottom: 20px;
         }
-
-        .input-box:hover {
-            border-color: var(--primary);
-            background: rgba(187, 134, 252, 0.05);
-            transform: translateY(-2px);
-        }
-
-        label {
-            display: block;
-            margin-bottom: 12px;
-            color: var(--primary);
-            font-size: 13px;
-            font-weight: 600;
-            text-transform: uppercase;
-        }
-
-        input[type="file"] {
-            width: 100%;
-            color: #aaa;
-            font-size: 14px;
-            cursor: pointer;
-        }
+        
+        label { display: block; margin-bottom: 12px; color: var(--text); font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        input[type="file"] { width: 100%; color: var(--text-dim); font-size: 13px; }
 
         button {
-            width: 100%;
-            padding: 18px;
-            background: linear-gradient(45deg, var(--primary), #9965f4);
-            border: none;
-            border-radius: 12px;
-            font-weight: bold;
-            cursor: pointer;
-            font-size: 16px;
-            color: #000;
-            transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            box-shadow: 0 10px 20px rgba(187, 134, 252, 0.2);
-            margin-top: 10px;
+            width: 100%; padding: 16px;
+            background-color: var(--accent);
+            border: none; border-radius: 4px;
+            font-weight: bold; cursor: pointer; color: #000;
+            text-transform: uppercase; font-size: 14px;
+            transition: 0.2s ease; margin-top: 10px;
         }
 
-        button:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 15px 30px rgba(187, 134, 252, 0.4);
-            filter: brightness(1.1);
-        }
-
-        button:active {
-            transform: translateY(-1px);
-        }
+        button:hover { background-color: #cccccc; }
 
         #log {
-            margin-top: 30px;
-            font-size: 13px;
-            color: var(--secondary);
-            background: #000;
-            padding: 20px;
-            border-radius: 12px;
-            display: none;
-            max-height: 180px;
-            overflow-y: auto;
-            border: 1px solid rgba(3, 218, 198, 0.2);
-            font-family: 'Fira Code', monospace;
-            line-height: 1.6;
+            margin-top: 25px; padding: 15px; background: #000;
+            border-radius: 4px; font-family: monospace; font-size: 12px;
+            display: none; max-height: 200px; overflow-y: auto;
+            border: 1px solid var(--border); line-height: 1.6;
         }
 
-        ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #333;
-            border-radius: 10px;
-        }
+        .alert-item { color: var(--error); font-weight: bold; }
+        .success-item { color: var(--success); }
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 </head>
 <body>
 
 <div class="card">
-    <h2>KMZ EXPORTER</h2>
-    <p class="subtitle">Automatic Spatial Grouping System</p>
+    <h2>KMZ GROUPER PRO</h2>
+    <p class="subtitle">Grouping HP & Rekap FAT Terpakai</p>
     
-    <div class="input-group">
-        <label>File KMZ/KML Home Pass</label>
-        <div class="input-box">
-            <input type="file" id="hpFile" accept=".kmz,.kml">
-        </div>
+    <div class="input-box">
+        <label>File KMZ/KML Home Pass (HP)</label>
+        <input type="file" id="hpFile" accept=".kmz,.kml">
     </div>
 
-    <div class="input-group">
+    <div class="input-box">
         <label>File KMZ/KML FAT</label>
-        <div class="input-box">
-            <input type="file" id="fatFile" accept=".kmz,.kml">
-        </div>
+        <input type="file" id="fatFile" accept=".kmz,.kml">
     </div>
 
-    <button onclick="prosesKmzLuxury()">Eksekusi Data</button>
+    <button onclick="prosesData()">EKSEKUSI DATA</button>
     <div id="log"></div>
 </div>
 
@@ -190,20 +111,21 @@
         return placemarks.map(p => {
             const name = p.getElementsByTagName("name")[0]?.textContent.trim() || "ID_NULL";
             const coordText = p.getElementsByTagName("coordinates")[0]?.textContent.trim();
+            if (!coordText) return null;
             const [lon, lat] = coordText.split(",").map(Number);
             return { name, lat, lon, element: p };
-        });
+        }).filter(item => item !== null);
     }
 
-    async function prosesKmzLuxury() {
+    async function prosesData() {
         const hpFile = document.getElementById('hpFile').files[0];
         const fatFile = document.getElementById('fatFile').files[0];
         const log = document.getElementById('log');
 
-        if (!hpFile || !fatFile) return alert("Bos, pilih file dulu!");
+        if (!hpFile || !fatFile) return alert("Pilih file dulu, Bos!");
 
         log.style.display = "block";
-        log.innerHTML = "> Memulai sinkronisasi data...";
+        log.innerHTML = "> Memproses data...";
 
         try {
             const hpKmlText = await extractKmlFromKmz(hpFile);
@@ -212,10 +134,15 @@
             const hpData = parsePlacemarks(hpKmlText);
             const fatData = parsePlacemarks(fatKmlText);
 
-            let finalKml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Grouping Result Luxury</name>`;
+            let finalKml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Grouping Result</name>`;
             
+            let rekapFatContent = "";
+            let overCapacity = [];
+
+            // 1. Proses Grouping HP ke dalam Folder FAT
             fatData.forEach(fat => {
-                finalKml += `<Folder><name>${fat.name}</name>`;
+                let currentHpList = [];
+                
                 hpData.forEach(hp => {
                     let minDistance = Infinity;
                     let targetFatName = "";
@@ -229,24 +156,43 @@
                     });
 
                     if (targetFatName === fat.name) {
-                        finalKml += hp.element.outerHTML;
+                        currentHpList.push(hp.element.outerHTML);
                     }
                 });
-                finalKml += `</Folder>`;
+
+                if (currentHpList.length > 0) {
+                    // Masukkan ke Folder Grouping
+                    finalKml += `<Folder><name>${fat.name} (${currentHpList.length} HP)</name>${currentHpList.join("")}</Folder>`;
+                    
+                    // Masukkan FAT ini ke Rekap karena terpakai
+                    rekapFatContent += fat.element.outerHTML;
+
+                    // Cek Kapasitas 34
+                    if (currentHpList.length > 34) {
+                        overCapacity.push(`${fat.name} (${currentHpList.length} HP)`);
+                    }
+                }
             });
 
+            // 2. Tambahkan Folder Rekap FAT Terpakai di bagian bawah
+            if (rekapFatContent !== "") {
+                finalKml += `<Folder><name>=== REKAP FAT TERPAKAI ===</name>${rekapFatContent}</Folder>`;
+            }
+
             finalKml += `</Document></kml>`;
+
+            if (overCapacity.length > 0) {
+                alert("⚠️ KAPASITAS LEBIH (MAX 34)!\n\n" + overCapacity.join("\n"));
+            }
 
             const zipOut = new JSZip();
             zipOut.file("doc.kml", finalKml);
             
-            // Backup foto/files
             if (hpFile.name.endsWith('.kmz')) {
                 const zipIn = await JSZip.loadAsync(hpFile);
                 for (const path in zipIn.files) {
                     if (path.startsWith('files/') || path.startsWith('images/')) {
-                        const content = await zipIn.files[path].async("blob");
-                        zipOut.file(path, content);
+                        zipOut.file(path, await zipIn.files[path].async("blob"));
                     }
                 }
             }
@@ -255,12 +201,12 @@
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = "Data_Jaringan_Luxury.kmz";
+            a.download = "Hasil_Grouping_Lengkap.kmz";
             a.click();
 
-            log.innerHTML += `<br>> Eksekusi Berhasil!<br>> Struktur folder sudah rapi Bos.`;
+            log.innerHTML = `<div class="success-item">> Selesai! Rekap FAT Terpakai sudah dibuat di folder bawah.</div>`;
         } catch (e) {
-            log.innerHTML += `<br>> ERROR: ${e.message}`;
+            log.innerHTML = `<div class="alert-item">> ERROR: ${e.message}</div>`;
         }
     }
 </script>
