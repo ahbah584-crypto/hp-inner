@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>KMZ Grouping Pro | AD PRODUCTION</title>
+    <title>KMZ Exporter Pro | Workspace</title>
     <style>
         :root {
             --bg: #121212;
@@ -12,51 +12,52 @@
             --text-dim: #888888;
             --accent: #ffffff;
             --error: #ff5252;
-            --success: #00e676;
+            --success: #03dac6;
         }
 
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', 'Segoe UI', sans-serif;
             background-color: var(--bg);
             color: var(--text);
             display: flex; justify-content: center; align-items: center;
             min-height: 100vh; margin: 0;
+            background: radial-gradient(circle at center, #1e1e2f 0%, #121212 100%);
         }
 
         .card {
-            background: var(--card-bg);
-            padding: 40px; border-radius: 12px;
-            border: 1px solid var(--border);
+            background-color: var(--card-bg);
+            padding: 40px; border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
             width: 100%; max-width: 500px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 20px 50px rgba(0,0,0,0.6);
         }
 
-        h2 { color: var(--accent); text-align: center; margin-bottom: 5px; font-weight: 600; }
-        p.subtitle { text-align: center; color: var(--text-dim); font-size: 13px; margin-bottom: 35px; }
+        h2 { color: var(--accent); text-align: center; margin-bottom: 8px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+        p.subtitle { text-align: center; color: var(--text-dim); font-size: 14px; margin-bottom: 35px; }
 
         .input-box {
-            background: #181818;
+            background: rgba(255, 255, 255, 0.03);
             border: 1px solid var(--border); padding: 20px;
-            border-radius: 6px; text-align: center; margin-bottom: 20px;
+            border-radius: 12px; text-align: center; margin-bottom: 20px;
         }
         
-        label { display: block; margin-bottom: 12px; color: var(--text); font-size: 12px; font-weight: bold; text-transform: uppercase; }
+        label { display: block; margin-bottom: 12px; color: var(--accent); font-size: 12px; font-weight: bold; text-transform: uppercase; }
         input[type="file"] { width: 100%; color: var(--text-dim); font-size: 13px; }
 
         button {
-            width: 100%; padding: 16px;
+            width: 100%; padding: 18px;
             background-color: var(--accent);
-            border: none; border-radius: 4px;
+            border: none; border-radius: 8px;
             font-weight: bold; cursor: pointer; color: #000;
-            text-transform: uppercase; font-size: 14px;
-            transition: 0.2s ease; margin-top: 10px;
+            text-transform: uppercase; letter-spacing: 2px;
+            transition: 0.3s; margin-top: 10px;
         }
 
-        button:hover { background-color: #cccccc; }
+        button:hover { background-color: #cccccc; transform: translateY(-2px); }
 
         #log {
             margin-top: 25px; padding: 15px; background: #000;
-            border-radius: 4px; font-family: monospace; font-size: 12px;
+            border-radius: 8px; font-family: monospace; font-size: 12px;
             display: none; max-height: 200px; overflow-y: auto;
             border: 1px solid var(--border); line-height: 1.6;
         }
@@ -69,123 +70,128 @@
 <body>
 
 <div class="card">
-    <h2>KMZ GROUPER PRO</h2>
-    <p class="subtitle">AD PRODUCTION - Clean Folder Mode</p>
+    <h2>KMZ EXPORTER</h2>
+    <p class="subtitle">Spatial Grouping & Record System</p>
     
-    <div class="input-box">
-        <label>File Boundary (KMZ/KML)</label>
-        <input type="file" id="boundaryFile" accept=".kmz,.kml">
-    </div>
-
     <div class="input-box">
         <label>File Home Pass (KMZ/KML)</label>
         <input type="file" id="hpFile" accept=".kmz,.kml">
     </div>
 
-    <button onclick="prosesData()">EKSEKUSI SEKARANG</button>
+    <div class="input-box">
+        <label>File FAT (KMZ/KML)</label>
+        <input type="file" id="fatFile" accept=".kmz,.kml">
+    </div>
+
+    <button onclick="prosesData()">EKSEKUSI DATA</button>
     <div id="log"></div>
 </div>
 
 <script>
-    function pointInPoly(point, vs) {
-        var x = point[0], y = point[1], inside = false;
-        for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
-            var xi = vs[i][0], yi = vs[i][1], xj = vs[j][0], yj = vs[j][1];
-            var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
-            if (intersect) inside = !inside;
-        }
-        return inside;
+    function getDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371e3; 
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                  Math.sin(dLon/2) * Math.sin(dLon/2);
+        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
-    async function getKml(file) {
+    async function extractKml(file) {
         if (file.name.endsWith('.kml')) return await file.text();
         const zip = await JSZip.loadAsync(file);
-        const kml = Object.keys(zip.files).find(n => n.endsWith('.kml'));
-        return await zip.files[kml].async("string");
+        const kmlFile = Object.keys(zip.files).find(name => name.endsWith('.kml'));
+        return await zip.files[kmlFile].async("string");
     }
 
-    function parseKml(xmlText, isPoly = false) {
+    function parsePlacemarks(xmlText) {
         const parser = new DOMParser();
         const xml = parser.parseFromString(xmlText, "text/xml");
         const placemarks = Array.from(xml.getElementsByTagName("Placemark"));
-        
         return placemarks.map(p => {
-            const name = p.getElementsByTagName("name")[0]?.textContent.trim() || "ID_NULL";
-            const coordNode = p.getElementsByTagName("coordinates")[0]?.textContent.trim();
-            if (!coordNode) return null;
-
-            if (isPoly) {
-                const coords = coordNode.split(/\s+/).map(c => c.split(',').slice(0,2).map(Number));
-                return { name, coords, element: p };
-            } else {
-                const [lon, lat] = coordNode.split(',').map(Number);
-                return { name, lat, lon, xml: p.outerHTML };
-            }
+            const name = p.getElementsByTagName("name")[0]?.textContent.trim() || "NULL";
+            const coordText = p.getElementsByTagName("coordinates")[0]?.textContent.trim();
+            if (!coordText) return null;
+            const [lon, lat] = coordText.split(",").map(Number);
+            return { name, lat, lon, element: p };
         }).filter(item => item !== null);
     }
 
     async function prosesData() {
-        const bFile = document.getElementById('boundaryFile').files[0];
-        const hFile = document.getElementById('hpFile').files[0];
+        const hpFile = document.getElementById('hpFile').files[0];
+        const fatFile = document.getElementById('fatFile').files[0];
         const log = document.getElementById('log');
 
-        if (!bFile || !hFile) return alert("Pilih file dulu Bos!");
+        if (!hpFile || !fatFile) return alert("Pilih file dulu!");
 
         log.style.display = "block";
-        log.innerHTML = "> Memproses Area...";
+        log.innerHTML = "> Memproses data...";
 
         try {
-            const bText = await getKml(bFile);
-            const hText = await getKml(hFile);
-            const boundaries = parseKml(bText, true);
-            const hps = parseKml(hText, false);
+            const hpKmlText = await extractKml(hpFile);
+            const fatKmlText = await extractKml(fatFile);
 
-            let docKml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Clean Grouping</name>`;
+            const hpData = parsePlacemarks(hpKmlText);
+            const fatData = parsePlacemarks(fatKmlText);
+
+            let finalKml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Export Result</name>`;
+            
+            let rekapContent = "";
             let logHtml = "";
-            let rekapFatContent = "";
-            let overList = [];
+            let warnings = [];
 
-            boundaries.forEach(poly => {
-                let count = 0;
-                let folderContent = "";
+            fatData.forEach(fat => {
+                let matchedHp = [];
                 
-                hps.forEach(hp => {
-                    if (pointInPoly([hp.lon, hp.lat], poly.coords)) {
-                        folderContent += hp.xml;
-                        count++;
+                hpData.forEach(hp => {
+                    let minD = Infinity;
+                    let bestFat = "";
+
+                    fatData.forEach(f => {
+                        const d = getDistance(hp.lat, hp.lon, f.lat, f.lon);
+                        if (d < minD) {
+                            minD = d;
+                            bestFat = f.name;
+                        }
+                    });
+
+                    if (bestFat === fat.name) {
+                        matchedHp.push(hp.element.outerHTML);
                     }
                 });
 
-                if (count > 0) {
-                    // Nama folder BERSIH (Hanya Kode FAT)
-                    docKml += `<Folder><name>${poly.name}</name>${folderContent}</Folder>`;
-                    rekapFatContent += poly.element.outerHTML;
+                if (matchedHp.length > 0) {
+                    // FOLDER BERSIH (Hanya Nama FAT)
+                    finalKml += `<Folder><name>${fat.name}</name>${matchedHp.join("")}</Folder>`;
+                    rekapContent += fat.element.outerHTML;
 
-                    if (count > 34) {
-                        logHtml += `<div class="alert-item">[!] ${poly.name}: ${count} HP (Over!)</div>`;
-                        overList.push(`${poly.name} (${count} HP)`);
+                    if (matchedHp.length > 34) {
+                        logHtml += `<div class="alert-item">[!] ${fat.name}: ${matchedHp.length} HP</div>`;
+                        warnings.push(`${fat.name} (${matchedHp.length})`);
                     } else {
-                        logHtml += `<div class="success-item">[OK] ${poly.name}: ${count} HP</div>`;
+                        logHtml += `<div class="success-item">[OK] ${fat.name}: ${matchedHp.length} HP</div>`;
                     }
                 }
             });
 
-            if (rekapFatContent !== "") {
-                docKml += `<Folder><name>REKAP FAT TERPAKAI</name>${rekapFatContent}</Folder>`;
+            // FOLDER REKAP DI BAWAH
+            if (rekapContent !== "") {
+                finalKml += `<Folder><name>REKAP FAT TERPAKAI</name>${rekapContent}</Folder>`;
             }
 
-            docKml += `</Document></kml>`;
+            finalKml += `</Document></kml>`;
             log.innerHTML = logHtml;
 
-            if (overList.length > 0) {
-                alert("⚠️ PERINGATAN KAPASITAS!\n\nFAT berikut melebihi 34 HP:\n" + overList.join("\n"));
+            if (warnings.length > 0) {
+                alert("⚠️ KAPASITAS OVER (MAX 34):\n\n" + warnings.join("\n"));
             }
 
             const zipOut = new JSZip();
-            zipOut.file("doc.kml", docKml);
+            zipOut.file("doc.kml", finalKml);
             
-            if (hFile.name.endsWith('.kmz')) {
-                const zipIn = await JSZip.loadAsync(hFile);
+            if (hpFile.name.endsWith('.kmz')) {
+                const zipIn = await JSZip.loadAsync(hpFile);
                 for (const path in zipIn.files) {
                     if (path.startsWith('files/') || path.startsWith('images/')) {
                         zipOut.file(path, await zipIn.files[path].async("blob"));
@@ -193,10 +199,10 @@
                 }
             }
 
-            const result = await zipOut.generateAsync({type:"blob"});
+            const res = await zipOut.generateAsync({type:"blob"});
             const a = document.createElement('a');
-            a.href = URL.createObjectURL(result);
-            a.download = "HASIL_GROUPING_BERSIH.kmz";
+            a.href = URL.createObjectURL(res);
+            a.download = "Hasil_Export_Clean.kmz";
             a.click();
 
         } catch (e) {
