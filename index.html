@@ -70,126 +70,122 @@
 
 <div class="card">
     <h2>KMZ GROUPER PRO</h2>
-    <p class="subtitle">Grouping HP & Rekap FAT Terpakai</p>
+    <p class="subtitle">AD PRODUCTION - Clean Folder Mode</p>
     
     <div class="input-box">
-        <label>File KMZ/KML Home Pass (HP)</label>
+        <label>File Boundary (KMZ/KML)</label>
+        <input type="file" id="boundaryFile" accept=".kmz,.kml">
+    </div>
+
+    <div class="input-box">
+        <label>File Home Pass (KMZ/KML)</label>
         <input type="file" id="hpFile" accept=".kmz,.kml">
     </div>
 
-    <div class="input-box">
-        <label>File KMZ/KML FAT</label>
-        <input type="file" id="fatFile" accept=".kmz,.kml">
-    </div>
-
-    <button onclick="prosesData()">EKSEKUSI DATA</button>
+    <button onclick="prosesData()">EKSEKUSI SEKARANG</button>
     <div id="log"></div>
 </div>
 
 <script>
-    function getDistance(lat1, lon1, lat2, lon2) {
-        const R = 6371e3; 
-        const dLat = (lat2 - lat1) * Math.PI / 180;
-        const dLon = (lon2 - lon1) * Math.PI / 180;
-        const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
-                  Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                  Math.sin(dLon/2) * Math.sin(dLon/2);
-        return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    function pointInPoly(point, vs) {
+        var x = point[0], y = point[1], inside = false;
+        for (var i = 0, j = vs.length - 1; i < vs.length; j = i++) {
+            var xi = vs[i][0], yi = vs[i][1], xj = vs[j][0], yj = vs[j][1];
+            var intersect = ((yi > y) != (yj > y)) && (x < (xj - xi) * (y - yi) / (yj - yi) + xi);
+            if (intersect) inside = !inside;
+        }
+        return inside;
     }
 
-    async function extractKmlFromKmz(file) {
+    async function getKml(file) {
         if (file.name.endsWith('.kml')) return await file.text();
         const zip = await JSZip.loadAsync(file);
-        const kmlFile = Object.keys(zip.files).find(name => name.endsWith('.kml'));
-        return await zip.files[kmlFile].async("string");
+        const kml = Object.keys(zip.files).find(n => n.endsWith('.kml'));
+        return await zip.files[kml].async("string");
     }
 
-    function parsePlacemarks(xmlText) {
+    function parseKml(xmlText, isPoly = false) {
         const parser = new DOMParser();
         const xml = parser.parseFromString(xmlText, "text/xml");
         const placemarks = Array.from(xml.getElementsByTagName("Placemark"));
+        
         return placemarks.map(p => {
             const name = p.getElementsByTagName("name")[0]?.textContent.trim() || "ID_NULL";
-            const coordText = p.getElementsByTagName("coordinates")[0]?.textContent.trim();
-            if (!coordText) return null;
-            const [lon, lat] = coordText.split(",").map(Number);
-            return { name, lat, lon, element: p };
+            const coordNode = p.getElementsByTagName("coordinates")[0]?.textContent.trim();
+            if (!coordNode) return null;
+
+            if (isPoly) {
+                const coords = coordNode.split(/\s+/).map(c => c.split(',').slice(0,2).map(Number));
+                return { name, coords, element: p };
+            } else {
+                const [lon, lat] = coordNode.split(',').map(Number);
+                return { name, lat, lon, xml: p.outerHTML };
+            }
         }).filter(item => item !== null);
     }
 
     async function prosesData() {
-        const hpFile = document.getElementById('hpFile').files[0];
-        const fatFile = document.getElementById('fatFile').files[0];
+        const bFile = document.getElementById('boundaryFile').files[0];
+        const hFile = document.getElementById('hpFile').files[0];
         const log = document.getElementById('log');
 
-        if (!hpFile || !fatFile) return alert("Pilih file dulu, Bos!");
+        if (!bFile || !hFile) return alert("Pilih file dulu Bos!");
 
         log.style.display = "block";
-        log.innerHTML = "> Memproses data...";
+        log.innerHTML = "> Memproses Area...";
 
         try {
-            const hpKmlText = await extractKmlFromKmz(hpFile);
-            const fatKmlText = await extractKmlFromKmz(fatFile);
+            const bText = await getKml(bFile);
+            const hText = await getKml(hFile);
+            const boundaries = parseKml(bText, true);
+            const hps = parseKml(hText, false);
 
-            const hpData = parsePlacemarks(hpKmlText);
-            const fatData = parsePlacemarks(fatKmlText);
-
-            let finalKml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Grouping Result</name>`;
-            
+            let docKml = `<?xml version="1.0" encoding="UTF-8"?><kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Clean Grouping</name>`;
+            let logHtml = "";
             let rekapFatContent = "";
-            let overCapacity = [];
+            let overList = [];
 
-            // 1. Proses Grouping HP ke dalam Folder FAT
-            fatData.forEach(fat => {
-                let currentHpList = [];
+            boundaries.forEach(poly => {
+                let count = 0;
+                let folderContent = "";
                 
-                hpData.forEach(hp => {
-                    let minDistance = Infinity;
-                    let targetFatName = "";
-
-                    fatData.forEach(f => {
-                        const d = getDistance(hp.lat, hp.lon, f.lat, f.lon);
-                        if (d < minDistance) {
-                            minDistance = d;
-                            targetFatName = f.name;
-                        }
-                    });
-
-                    if (targetFatName === fat.name) {
-                        currentHpList.push(hp.element.outerHTML);
+                hps.forEach(hp => {
+                    if (pointInPoly([hp.lon, hp.lat], poly.coords)) {
+                        folderContent += hp.xml;
+                        count++;
                     }
                 });
 
-                if (currentHpList.length > 0) {
-                    // Masukkan ke Folder Grouping
-                    finalKml += `<Folder><name>${fat.name} (${currentHpList.length} HP)</name>${currentHpList.join("")}</Folder>`;
-                    
-                    // Masukkan FAT ini ke Rekap karena terpakai
-                    rekapFatContent += fat.element.outerHTML;
+                if (count > 0) {
+                    // Nama folder BERSIH (Hanya Kode FAT)
+                    docKml += `<Folder><name>${poly.name}</name>${folderContent}</Folder>`;
+                    rekapFatContent += poly.element.outerHTML;
 
-                    // Cek Kapasitas 34
-                    if (currentHpList.length > 34) {
-                        overCapacity.push(`${fat.name} (${currentHpList.length} HP)`);
+                    if (count > 34) {
+                        logHtml += `<div class="alert-item">[!] ${poly.name}: ${count} HP (Over!)</div>`;
+                        overList.push(`${poly.name} (${count} HP)`);
+                    } else {
+                        logHtml += `<div class="success-item">[OK] ${poly.name}: ${count} HP</div>`;
                     }
                 }
             });
 
-            // 2. Tambahkan Folder Rekap FAT Terpakai di bagian bawah
             if (rekapFatContent !== "") {
-                finalKml += `<Folder><name>=== REKAP FAT TERPAKAI ===</name>${rekapFatContent}</Folder>`;
+                docKml += `<Folder><name>REKAP FAT TERPAKAI</name>${rekapFatContent}</Folder>`;
             }
 
-            finalKml += `</Document></kml>`;
+            docKml += `</Document></kml>`;
+            log.innerHTML = logHtml;
 
-            if (overCapacity.length > 0) {
-                alert("⚠️ KAPASITAS LEBIH (MAX 34)!\n\n" + overCapacity.join("\n"));
+            if (overList.length > 0) {
+                alert("⚠️ PERINGATAN KAPASITAS!\n\nFAT berikut melebihi 34 HP:\n" + overList.join("\n"));
             }
 
             const zipOut = new JSZip();
-            zipOut.file("doc.kml", finalKml);
+            zipOut.file("doc.kml", docKml);
             
-            if (hpFile.name.endsWith('.kmz')) {
-                const zipIn = await JSZip.loadAsync(hpFile);
+            if (hFile.name.endsWith('.kmz')) {
+                const zipIn = await JSZip.loadAsync(hFile);
                 for (const path in zipIn.files) {
                     if (path.startsWith('files/') || path.startsWith('images/')) {
                         zipOut.file(path, await zipIn.files[path].async("blob"));
@@ -197,16 +193,14 @@
                 }
             }
 
-            const blob = await zipOut.generateAsync({type:"blob"});
-            const url = window.URL.createObjectURL(blob);
+            const result = await zipOut.generateAsync({type:"blob"});
             const a = document.createElement('a');
-            a.href = url;
-            a.download = "Hasil_Grouping_Lengkap.kmz";
+            a.href = URL.createObjectURL(result);
+            a.download = "HASIL_GROUPING_BERSIH.kmz";
             a.click();
 
-            log.innerHTML = `<div class="success-item">> Selesai! Rekap FAT Terpakai sudah dibuat di folder bawah.</div>`;
         } catch (e) {
-            log.innerHTML = `<div class="alert-item">> ERROR: ${e.message}</div>`;
+            log.innerHTML = "ERROR: " + e.message;
         }
     }
 </script>
